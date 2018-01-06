@@ -22,3 +22,17 @@ go get -u github.com/codegangsta/gin
 - Then navigate to `goreplay` directory and run it via: `gin run main.go`
 - The app will be accessible at http://localhost:3000/playground
     - **Not a type**. port 3000 is the default proxy port `gin` uses, `goreplay` is still listening/servering on port 3001
+
+### Config options
+```yaml
+# defaults
+
+# rethinkdb connection
+re_database: test
+re_ip: localhost
+re_port: 28015
+
+# web app connection
+http_address: localhost
+http_port: 3001
+```

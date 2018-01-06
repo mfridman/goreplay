@@ -1,5 +1,5 @@
 # rethinkdb connection
-re_database: demo
+re_database: test
 re_ip: localhost
 re_port: 28015
 
