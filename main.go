@@ -8,40 +8,28 @@ import (
 
 	r "github.com/GoRethink/gorethink"
 	"github.com/pkg/errors"
-)
-
-// The values below are specific to rethinkdb and should be adjusted for your environemnt
-var (
-	// DATABASE is the name of db connecting to, default is test
-	DATABASE = "test"
-	// IP is the location of rethinkdb
-	IP = "localhost"
-	// PORT, default rethinkdb port is 28015
-	PORT = "28015"
-)
-
-// Listen and serve, i.e,. http://localhost:3001/playground
-//
-// Can use gin for live reloading without building binary each time
-// go get -u github.com/codegangsta/gin
-// verify it is installed by running: gin -h
-// then from root of application run: gin run main.go
-// and access the app from http://localhost:3000/playground
-// NOT A TYPO. port 3000 is the default proxy port gin uses, our app is still listening/servering on port 3001
-var (
-	// HTTPHostName
-	HTTPHostName = "localhost"
-	// HTTPPort
-	HTTPPort = "3001"
+	"github.com/spf13/viper"
 )
 
 func main() {
 
+	// load in config file from settings folder
+	viper.SetConfigType("yaml")
+	viper.SetConfigFile("config")
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalf("missing config file; expecting a file named [%v] in current app directory\n", viper.ConfigFileUsed())
+	}
+
+	// validate mandatory config options
+	if err := validateCfg(); err != nil {
+		log.Fatalln(err)
+	}
+
 	// create database connection
 	session, err := r.Connect(
 		r.ConnectOpts{
-			Address:  IP + ":" + PORT,
-			Database: DATABASE,
+			Address:  viper.GetString("re_ip") + ":" + viper.GetString("re_port"),
+			Database: viper.GetString("re_database"),
 		},
 	)
 	if err != nil {
@@ -52,7 +40,8 @@ func main() {
 	http.Handle("/playground", playgroundHandler(session))
 
 	// listen and serve
-	http.ListenAndServe(HTTPHostName+":"+HTTPPort, nil)
+	addr := viper.GetString("http_address") + ":" + viper.GetString("http_port")
+	http.ListenAndServe(addr, nil)
 }
 
 func playgroundHandler(session *r.Session) http.Handler {
@@ -92,4 +81,23 @@ func playgroundHandler(session *r.Session) http.Handler {
 
 		fmt.Fprint(w, string(j))
 	})
+}
+
+func validateCfg() error {
+	// mandatory config options, if these are missing program will crash
+	config := []string{
+		"re_database",
+		"re_port",
+		"re_ip",
+		"http_address",
+		"http_port",
+	}
+
+	for _, c := range config {
+		if !viper.IsSet(c) {
+			return errors.Errorf("Error. Missing mandatory config option: %v", c)
+		}
+	}
+
+	return nil
 }

@@ -1,0 +1,8 @@
+# rethinkdb connection
+re_database: demo
+re_ip: localhost
+re_port: 28015
+
+# web app connection
+http_address: localhost
+http_port: 3001
