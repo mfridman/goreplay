@@ -11,6 +11,45 @@ import (
 	"github.com/spf13/viper"
 )
 
+func playgroundHandler(session *r.Session) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+
+		if !session.IsConnected() {
+			http.Error(w, "rethinkdb session not available, check session.IsConnected()", http.StatusInternalServerError)
+			return
+		}
+		/*
+			start of play
+		*/
+
+		cur, err := r.TableList().Run(session)
+		if err != nil {
+			http.Error(w, fmt.Sprint(err), http.StatusInternalServerError)
+			return
+		}
+
+		all := make([]string, 0)
+
+		if err := cur.All(&all); err != nil {
+			http.Error(w, fmt.Sprint(err), http.StatusInternalServerError)
+			return
+		}
+
+		/*
+			end of play
+		*/
+
+		// pretty print items from rethinkdb
+		j, err := json.MarshalIndent(all, "", "\t")
+		if err != nil {
+			http.Error(w, fmt.Sprint(err), http.StatusInternalServerError)
+			return
+		}
+
+		fmt.Fprint(w, string(j))
+	})
+}
+
 func main() {
 
 	// load in config file from settings folder
@@ -42,45 +81,6 @@ func main() {
 	// listen and serve
 	addr := viper.GetString("http_address") + ":" + viper.GetString("http_port")
 	http.ListenAndServe(addr, nil)
-}
-
-func playgroundHandler(session *r.Session) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-
-		if !session.IsConnected() {
-			http.Error(w, "rethinkdb session not available, check session.IsConnected()", http.StatusInternalServerError)
-			return
-		}
-		/*
-			start of play
-		*/
-
-		cur, err := r.TableList().Run(session)
-		if err != nil {
-			http.Error(w, fmt.Sprint(err), http.StatusInternalServerError)
-			return
-		}
-
-		var all []string
-
-		if err := cur.All(&all); err != nil {
-			http.Error(w, fmt.Sprint(err), http.StatusInternalServerError)
-			return
-		}
-
-		/*
-			end of play
-		*/
-
-		// pretty print items from rethinkdb
-		j, err := json.MarshalIndent(all, "", "\t")
-		if err != nil {
-			http.Error(w, fmt.Sprint(err), http.StatusInternalServerError)
-			return
-		}
-
-		fmt.Fprint(w, string(j))
-	})
 }
 
 func validateCfg() error {
